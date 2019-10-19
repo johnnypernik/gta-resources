@@ -15,6 +15,12 @@ Citizen.CreateThread(function()
     ESX.PlayerData = ESX.GetPlayerData()
 end)
 
+
+RegisterNetEvent('esx:setJob')
+AddEventHandler('esx:setJob', function(job)
+    ESX.PlayerData = ESX.GetPlayerData()         
+end)
+
 RegisterNetEvent('disc-billing:bill')
 AddEventHandler('disc-billing:bill', function(billing)
     local nearByPlayers = GetNeareastPlayers()
@@ -74,6 +80,7 @@ end
 
 function Bill(id, society, name, value)
     exports['mythic_notify']:DoHudText('success', 'Bill sent')
+    name = name .. ' ('..ESX.PlayerData.job.label.. ')' 
     TriggerServerEvent('esx_billing:sendBill', id, society, name, value)
 end
 

@@ -6,8 +6,9 @@ end)
 
 RegisterCommand("bill", function(src, args, raw)
     local player = ESX.GetPlayerFromId(src)
-    local society = GetSociety(player)
-    if society ~= nil then
+    local society = 'society_'..player.job.name
+
+    if society ~= nil and society ~= 'society_unemployed' then
         local billing = {
             sourcePlayer = player,
             society = society
@@ -15,12 +16,3 @@ RegisterCommand("bill", function(src, args, raw)
         TriggerClientEvent("disc-billing:bill", src, billing)
     end
 end)
-
-function GetSociety(player)
-    for k, v in pairs(Config.Billing) do
-        if v.job == player.job.name then
-            return v.society
-        end
-    end
-    return nil
-end
