@@ -1,32 +1,36 @@
 secondInventory = nil
 
-RegisterNUICallback('MoveToEmpty', function(data)
+RegisterNUICallback('MoveToEmpty', function(data, cb)
     TriggerServerEvent('disc-inventoryhud:MoveToEmpty', data)
     TriggerEvent('disc-inventoryhud:MoveToEmpty', data)
+    cb('OK')
 end)
 
-RegisterNUICallback('EmptySplitStack', function(data)
+RegisterNUICallback('EmptySplitStack', function(data, cb)
     TriggerServerEvent('disc-inventoryhud:EmptySplitStack', data)
     TriggerEvent('disc-inventoryhud:EmptySplitStack', data)
+    cb('OK')
 end)
 
-RegisterNUICallback('SplitStack', function(data)
+RegisterNUICallback('SplitStack', function(data, cb)
     TriggerServerEvent('disc-inventoryhud:SplitStack', data)
     TriggerEvent('disc-inventoryhud:SplitStack', data)
+    cb('OK')
 end)
 
-RegisterNUICallback('CombineStack', function(data)
+RegisterNUICallback('CombineStack', function(data, cb)
     TriggerServerEvent('disc-inventoryhud:CombineStack', data)
     TriggerEvent('disc-inventoryhud:CombineStack', data)
+    cb('OK')
 end)
 
-RegisterNUICallback('SwapItems', function(data)
+RegisterNUICallback('SwapItems', function(data, cb)
     TriggerServerEvent('disc-inventoryhud:SwapItems', data)
     TriggerEvent('disc-inventoryhud:SwapItems', data)
+    cb('OK')
 end)
 
 RegisterNUICallback('GiveItem', function(data, cb)
-    TriggerServerEvent('disc-inventoryhud:notifyImpendingRemoval', data.item, data.number)
     TriggerServerEvent('disc-inventoryhud:GiveItem', data)
     cb('OK')
 end)
@@ -50,6 +54,7 @@ RegisterNUICallback('GetNearPlayers', function(data)
         SendNUIMessage({
             action = "nearPlayersPay",
             players = GetNeareastPlayers(),
+            item = data.item
         })
     end
 end)
@@ -76,6 +81,10 @@ AddEventHandler('disc-inventoryhud:refreshInventory', function()
     if secondInventory ~= nil then
         refreshSecondaryInventory()
     end
+    Citizen.Wait(100)
+    SendNUIMessage({
+        action = "unlock"
+    })
 end)
 
 function refreshPlayerInventory()
@@ -100,8 +109,6 @@ function refreshPlayerInventory()
 end
 
 function refreshSecondaryInventory()
-    print('secondInventory.type ' .. secondInventory.type)
-    print('secondInventory.owner ' .. secondInventory.owner)
     ESX.TriggerServerCallback('disc-inventoryhud:getSecondaryInventory', function(data)
         SendNUIMessage(
                 { action = "setSecondInventoryItems",
@@ -163,26 +170,31 @@ end
 RegisterNetEvent("disc-inventoryhud:MoveToEmpty")
 AddEventHandler("disc-inventoryhud:MoveToEmpty", function(data)
     playPickupOrDropAnimation(data)
+    playStealOrSearchAnimation(data)
 end)
 
 RegisterNetEvent("disc-inventoryhud:EmptySplitStack")
 AddEventHandler("disc-inventoryhud:EmptySplitStack", function(data)
     playPickupOrDropAnimation(data)
+    playStealOrSearchAnimation(data)
 end)
 
 RegisterNetEvent("disc-inventoryhud:SplitStack")
 AddEventHandler("disc-inventoryhud:SplitStack", function(data)
     playPickupOrDropAnimation(data)
+    playStealOrSearchAnimation(data)
 end)
 
 RegisterNetEvent("disc-inventoryhud:CombineStack")
 AddEventHandler("disc-inventoryhud:CombineStack", function(data)
     playPickupOrDropAnimation(data)
+    playStealOrSearchAnimation(data)
 end)
 
 RegisterNetEvent("disc-inventoryhud:SwapItems")
 AddEventHandler("disc-inventoryhud:SwapItems", function(data)
     playPickupOrDropAnimation(data)
+    playStealOrSearchAnimation(data)
 end)
 
 function playPickupOrDropAnimation(data)
@@ -191,6 +203,17 @@ function playPickupOrDropAnimation(data)
         if not IsEntityPlayingAnim(playerPed, 'random@domestic', 'pickup_low', 3) then
             ESX.Streaming.RequestAnimDict('random@domestic', function()
                 TaskPlayAnim(playerPed, 'random@domestic', 'pickup_low', 8.0, -8, -1, 48, 0, 0, 0, 0)
+            end)
+        end
+    end
+end
+
+function playStealOrSearchAnimation(data)
+    if data.originTier.name == 'player' and data.destinationTier.name == 'player' then
+        local playerPed = GetPlayerPed(-1)
+        if not IsEntityPlayingAnim(playerPed, 'random@mugging4', 'agitated_loop_a', 3) then
+            ESX.Streaming.RequestAnimDict('random@mugging4', function()
+                TaskPlayAnim(playerPed, 'random@mugging4', 'agitated_loop_a', 8.0, -8, -1, 48, 0, 0, 0, 0)
             end)
         end
     end

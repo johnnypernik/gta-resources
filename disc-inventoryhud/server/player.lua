@@ -6,7 +6,6 @@ ESX.RegisterServerCallback('disc-inventoryhud:getPlayerInventory', function(sour
 end)
 
 Citizen.CreateThread(function()
-    --Player
     TriggerEvent('disc-inventoryhud:RegisterInventory', {
         name = 'player',
         label = 'Player',
@@ -47,7 +46,7 @@ function ensurePlayerInventory(player)
     getInventory(player.identifier, 'player', function(result)
         local inventory = {}
         for _, esxItem in pairs(player.getInventory()) do
-            print('Adding ' .. esxItem.name .. ' ' .. esxItem.count)
+            print('Adding ' .. esxItem.name .. ' ' .. esxItem.count .. ' ' .. esxItem.limit)
             local item = createItem(esxItem.name, esxItem.count)
             addToInventory(item, 'player', inventory, esxItem.limit)
         end
@@ -67,8 +66,12 @@ AddEventHandler('disc-inventoryhud:notifyImpendingRemoval', function(item, count
         impendingRemovals[_source] = {}
     end
     item.count = count
-    print(_source)
-    table.insert(impendingRemovals[_source], item)
+    local k = #impendingRemovals + 1
+    impendingRemovals[_source][k] = item
+    Citizen.CreateThread(function()
+        Citizen.Wait(100)
+        impendingRemovals[k] = nil
+    end)
 end)
 
 RegisterServerEvent('disc-inventoryhud:notifyImpendingAddition')
@@ -78,7 +81,12 @@ AddEventHandler('disc-inventoryhud:notifyImpendingAddition', function(item, coun
         impendingAdditions[_source] = {}
     end
     item.count = count
-    table.insert(impendingAdditions[_source], item)
+    local k = #impendingAdditions + 1
+    impendingAdditions[_source][k] = item
+    Citizen.CreateThread(function()
+        Citizen.Wait(100)
+        impendingAdditions[k] = nil
+    end)
 end)
 
 AddEventHandler('esx:onRemoveInventoryItem', function(source, item, count)
@@ -88,16 +96,11 @@ AddEventHandler('esx:onRemoveInventoryItem', function(source, item, count)
     })
     getInventory(player.identifier, 'player', function(inventory)
         if impendingRemovals[source] then
-            print('Looking at source' .. source)
             for k, removingItem in pairs(impendingRemovals[source]) do
-                print('Looking at ' .. removingItem.id)
                 if removingItem.id == item.name and removingItem.count == count then
-                    print('Found')
                     if removingItem.block then
-                        print('Blocked Removal')
                         impendingRemovals[source][k] = nil
                     else
-                        print('Non Blocked Removal')
                         removeItemFromSlot(inventory, removingItem.slot, count)
                         impendingRemovals[source][k] = nil
                         saveInventory(player.identifier, 'player', inventory)
@@ -122,16 +125,13 @@ AddEventHandler('esx:onAddInventoryItem', function(source, esxItem, count)
         if impendingAdditions[source] then
             for k, addingItem in pairs(impendingAdditions[source]) do
                 if addingItem.id == esxItem.name and addingItem.count == count then
-                    print('Found')
                     if addingItem.block then
-                        print('Blocked Addition')
                         impendingAdditions[source][k] = nil
                         return
                     end
                 end
             end
         end
-        print('Running Default')
         local item = createItem(esxItem.name, count)
         addToInventory(item, 'player', inventory, esxItem.limit)
         saveInventory(player.identifier, 'player', inventory)
